@@ -2,8 +2,12 @@
 #ifndef BUFFER_MGR_H
 #define BUFFER_MGR_H
 
+#include <vector>
+#include <map>
 #include "MyDB_PageHandle.h"
 #include "MyDB_Table.h"
+//#include "MyDB_Page.h"
+#include "MyDB_LRU.h"
 
 using namespace std;
 
@@ -47,11 +51,30 @@ public:
 	// and any temporary files need to be deleted
 	~MyDB_BufferManager ();
 
-	// FEEL FREE TO ADD ADDITIONAL PUBLIC METHODS 
+	// FEEL FREE TO ADD ADDITIONAL PUBLIC METHODS
 
+    //available ram
+    vector<void*> bufferVector;
+
+    //lookup table
+    map<pair<MyDB_TablePtr, long>, MyDB_PagePtr> lookupTable;
+
+    //LRU
+//    friend class MyDB_LRU myDbLRU;
+    MyDB_LRU *myDbLRU;
 private:
 
 	// YOUR STUFF HERE
+
+    // the size of each page
+    size_t pageSize;
+    // the number of pages managed by the buffer manager
+    size_t numPages;
+    // temporary pages are written to the file tempFile
+    string tempFile;
+
+    //count for anonymous pages
+    int anonymousCount;
 
 };
 
