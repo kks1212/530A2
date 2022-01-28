@@ -6,11 +6,11 @@
 #include <map>
 #include "MyDB_PageHandle.h"
 #include "MyDB_Table.h"
-//#include "MyDB_Page.h"
 #include "MyDB_LRU.h"
+#include "MyDB_Page.h"
 
 using namespace std;
-
+class MyDB_LRU;
 class MyDB_BufferManager {
 
 public:
@@ -56,27 +56,37 @@ public:
     //available ram
     vector<void*> bufferVector;
 
+    //check RAM spare space
+    void allocateRAM(MyDB_Page* page);
+
+    //kill a page
+    void killPage(MyDB_PagePtr page);
+
     //lookup table
     map<pair<MyDB_TablePtr, long>, MyDB_PagePtr> lookupTable;
 
     //LRU
 //    friend class MyDB_LRU myDbLRU;
     MyDB_LRU *myDbLRU;
-private:
 
-	// YOUR STUFF HERE
-
+    // temporary pages are written to the file tempFile
+    string tempFile;
     // the size of each page
     size_t pageSize;
     // the number of pages managed by the buffer manager
     size_t numPages;
-    // temporary pages are written to the file tempFile
-    string tempFile;
+
+private:
+
+	// YOUR STUFF HERE
+
+
 
     //count for anonymous pages
     int anonymousCount;
 
 };
+
 
 #endif
 

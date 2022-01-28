@@ -15,11 +15,11 @@ void MyDB_PageHandleBase :: wroteBytes () {
 
 MyDB_PageHandleBase::MyDB_PageHandleBase(MyDB_PagePtr page) {
     this->myPage = page;
-    //todo:    this->myPage.addRef;
+    myPage->addRef();
 }
 
 MyDB_PageHandleBase :: ~MyDB_PageHandleBase () {
-    //todo:    this->myPage.decreaseRef;
+    myPage->reduceRef();
 }
 
 MyDB_PagePtr MyDB_PageHandleBase::getMyPage() {

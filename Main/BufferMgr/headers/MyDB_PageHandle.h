@@ -36,12 +36,12 @@ public:
 
 	// FEEL FREE TO ADD ADDITIONAL PUBLIC METHODS
 
-    MyDB_PageHandleBase (MyDB_PagePtr page);
+    explicit MyDB_PageHandleBase (MyDB_PagePtr page);
     //get the current page
     MyDB_PagePtr getMyPage();
 
     //reference to buffer manager
-    MyDB_BufferManager* myManager;
+//    MyDB_BufferManager* myManager;
 private:
 
     // the actual page that this handle point to
