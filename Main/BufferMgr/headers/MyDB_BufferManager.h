@@ -57,7 +57,7 @@ public:
     vector<void*> bufferVector;
 
     //check RAM spare space
-    void allocateRAM(MyDB_Page* page);
+    void allocateRAM(MyDB_PagePtr page);
 
     //kill a page
     void killPage(MyDB_PagePtr page);
@@ -66,6 +66,7 @@ public:
     map<pair<MyDB_TablePtr, long>, MyDB_PagePtr> lookupTable;
 
     //LRU
+    void manage(pair<MyDB_TablePtr, long> pageId);
 //    friend class MyDB_LRU myDbLRU;
     MyDB_LRU *myDbLRU;
 

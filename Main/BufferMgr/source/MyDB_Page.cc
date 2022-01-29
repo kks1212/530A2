@@ -3,8 +3,6 @@
 //
 
 #include "MyDB_Page.h"
-#include <sys/types.h>
-#include <sys/uio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include "MyDB_BufferManager.h"
@@ -17,6 +15,7 @@ MyDB_Page::MyDB_Page(MyDB_BufferManager* myManager, MyDB_TablePtr myTable, long 
     this->refCount = 0;
     this->isPin = false;
     this->isDirty = false;
+    this->isRead = false;
     if(myTable == nullptr){
         this->isAnonymous = true;
     }else{
@@ -27,22 +26,9 @@ MyDB_Page::MyDB_Page(MyDB_BufferManager* myManager, MyDB_TablePtr myTable, long 
 
 //access the raw bytes in this page, if not in the buffer, then loaded from the secondary storage
 void *MyDB_Page::getBytes() {
-    if(this->bytes == nullptr){
-        //allocate memory
-        myManager->allocateRAM(this);
-
-
-        //read from disc
-        int file_descriptor;
-        if(pageId.first == nullptr){
-            //todo:O_FSYNC?
-            file_descriptor = open(myManager->tempFile.c_str (), O_CREAT | O_RDWR | O_FSYNC, 0666);
-        }else{
-            file_descriptor = open (pageId.first->getStorageLoc ().c_str (), O_CREAT | O_RDWR | O_FSYNC, 0666);
-        }
-        lseek (file_descriptor, pageId.second * this->myManager->pageSize, SEEK_SET);
-        read (file_descriptor, this->bytes, this->myManager->pageSize);
-        close (file_descriptor);
+    if(bytes == nullptr){
+        //if bytes == null, means not int the LRU, needs allocate spaces and put into LRU.
+        myManager->manage(pageId);
     }
     return this->bytes;
 }
@@ -54,8 +40,12 @@ void MyDB_Page::addRef() {
 void MyDB_Page::reduceRef() {
     this->refCount -= 1;
     //anonymous page refCount == 0, kill it
-    if(this->refCount == 0 && pageId.first == nullptr){
+    if(this->refCount == 0 && pageId.first == nullptr && !isPin){
         myManager->killPage(make_shared<MyDB_Page>(myManager, pageId.first, pageId.second));
+    }else if(this->refCount == 0 && isPin){
+        //pinned page ref == 0 auto switch to unpinned page
+        isPin = false;
+        myManager->myDbLRU->updatePinCount(pageId);
     }
 }
 
@@ -77,9 +67,21 @@ void MyDB_Page::writeBack() {
             file_descriptor = open (pageId.first->getStorageLoc().c_str (), O_CREAT | O_RDWR | O_SYNC, 0666);
         }
         lseek (file_descriptor, pageId.second * this->myManager->pageSize, SEEK_SET);
-        write (file_descriptor, bytes, this->myManager->pageSize);
+        write (file_descriptor, this->bytes, this->myManager->pageSize);
         close (file_descriptor);
         isDirty = false;
     }
+}
 
+void MyDB_Page::readFromDisk() {
+    //read from disc
+    int file_descriptor;
+    if(pageId.first == nullptr){
+        file_descriptor = open(myManager->tempFile.c_str (), O_CREAT | O_RDWR | O_SYNC, 0666);
+    }else{
+        file_descriptor = open (pageId.first->getStorageLoc ().c_str (), O_CREAT | O_RDWR | O_SYNC, 0666);
+    }
+    lseek (file_descriptor, pageId.second * this->myManager->pageSize, SEEK_SET);
+    read (file_descriptor, this->bytes, this->myManager->pageSize);
+    close (file_descriptor);
 }

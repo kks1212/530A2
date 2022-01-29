@@ -7,6 +7,8 @@
 #include <list>
 #include <map>
 #include "MyDB_BufferManager.h"
+#include "MyDB_Page.h"
+
 //#include "MyDB_Table.h"
 //#include "MyDB_Page.h"
 
@@ -71,5 +73,6 @@ private:
     DLinkedNode* tail;
     MyDB_BufferManager* myManager;
 };
+
 
 #endif //A1_MYDB_LRU_H

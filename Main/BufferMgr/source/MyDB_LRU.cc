@@ -32,17 +32,14 @@ MyDB_PagePtr MyDB_LRU::get(pair<MyDB_TablePtr, long> key) {
 
 void MyDB_LRU::put(pair<MyDB_TablePtr, long> key, MyDB_PagePtr value) {
     auto kv = cacheMap.find(key);
-//    cout<<"Size:";
-//    cout<<size<<endl;
     //new element
     if(kv == cacheMap.end()){
         //if LRU is full, pop last first
-        if(size == capacity){
+        if(size >= capacity){
             removeTail();
         }
         //create new item
         size++;
-        if(key.first == nullptr) pinCount++;
 
         DLinkedNode* node = new DLinkedNode(key, value);
         cacheMap[key] = node;
@@ -55,7 +52,7 @@ void MyDB_LRU::put(pair<MyDB_TablePtr, long> key, MyDB_PagePtr value) {
 }
 
 void MyDB_LRU::removeTail() {
-    if(pinCount == capacity){
+    if(pinCount >= capacity){
         cout << "pinCount == capacity\n";
         exit(1);
     }
@@ -63,32 +60,30 @@ void MyDB_LRU::removeTail() {
     //for loop find the first page which is not pinned
     for(int i=0; i<size; i++){
         if(!temp->pagePtr->isPin){
-            //write the bytes back to disk if the bytes is dirty
             MyDB_PagePtr page = temp->pagePtr;
-            page->writeBack();
-
-            //if ref == 0, also delete from the map
+            //kill the page
             if(page->refCount == 0){
                 myManager->killPage(page);
+            }else{
+                //if ref != 0, just remove from the LRU
+                killNode(page->pageId);
             }
-
-            //seems duplicate with killpage
-            killNode(page->pageId);
             break;
         }
         temp = temp->prev;
     }
-
 }
 
 //move a key from map and list
 void MyDB_LRU::killNode(pair<MyDB_TablePtr, long> key) {
     if(cacheMap.find(key) != cacheMap.end()){
         DLinkedNode* deNode = cacheMap[key];
+        deNode->pagePtr->writeBack();
+        cacheMap.erase(key);
+
         //recover the buffervector
         myManager->bufferVector.push_back(deNode->pagePtr->bytes);
         deNode->pagePtr->bytes = nullptr;
-        cacheMap.erase(key);
         removeNode(deNode);
         delete deNode;
         size--;

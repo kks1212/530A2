@@ -45,8 +45,11 @@ public:
     //reference counts
     int refCount;
 
-    //read from the disk
-//    void* readFromDisk(MyDB_TablePtr whichTable, long offset);
+    //whether read from the disk
+    bool isRead;
+
+    //read from disk
+    void readFromDisk();
 
     //write back to disk
     void writeBack();
